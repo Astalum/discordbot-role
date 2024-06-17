@@ -26,8 +26,9 @@ async def on_message(message):
 
     # ユーザーからのメンションを受け取った場合、そのメッセージにリアクションをつける
     if client.user in message.mentions:
-        emoji = "<:delay:1224985952393625630>"
-        await message.add_reaction(emoji)
+        emoji_list = ["<:delay:1224985952393625630>","<:mozuku:1252115584624099370>","<:naetoru:1252115727599538279>"]
+        for emoji in emoji_list:
+            await message.add_reaction(emoji)
 
 # Bot起動
 client.run(config.DISCORD_TOKEN)
