@@ -8,12 +8,13 @@ intents = discord.Intents.all()
 client=discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
-write_json = False
+write_json=False
 
 # bot起動時に発火
 @client.event
 async def on_ready():
     print("bot is online!")
+    global write_json
     # アクティビティを設定 
     new_activity = f"出欠席リアクション" 
     write_json = False
@@ -23,7 +24,8 @@ async def on_ready():
 
 # メッセージの検知
 @client.event
-async def on_message(message, write_json):
+async def on_message(message):
+    global write_json
     # 自身が送信したメッセージには反応しない
     if message.author == client.user:
         return
@@ -48,13 +50,15 @@ async def on_message(message, write_json):
 
 
 @tree.command(name="update_reactions-id", description="出欠席リアクションIDを更新します") 
-async def start_update_reaction(interaction: discord.Interaction, write_json: bool): 
+async def start_update_reaction(interaction: discord.Interaction): 
+    global write_json
     write_json = True
     await interaction.response.send_message("出欠席リアクションのIDを更新します。リアクションに対応するものを返信してください。\nSoprano_attend")
 
 
 @tree.command(name="finished", description="出欠席リアクションIDの更新を終了します") 
-async def finish_update_reaction(interaction: discord.Interaction, write_json :bool): 
+async def finish_update_reaction(interaction: discord.Interaction): 
+    global write_json
     write_json = False
     await interaction.response.send_message("出欠席リアクションの更新を終了しました。@メンションをして正しく設定されているかを確認してください。")
 
