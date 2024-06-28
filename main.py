@@ -41,7 +41,7 @@ async def on_message(message):
     if write_json == True:
         with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f:
             reaction = json.load(f)
-            print(reaction)
+            # print(reaction)
         if reaction[num_reaction] == "Soprano_attend":
             return
         elif reaction[num_reaction] == "off_stage":
