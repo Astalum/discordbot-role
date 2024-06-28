@@ -26,6 +26,7 @@ async def on_ready():
 @client.event
 async def on_message(message):
     global write_json
+    global num_reaction
     # 自身が送信したメッセージには反応しない
     if message.author == client.user:
         return
@@ -39,20 +40,23 @@ async def on_message(message):
     # JSONファイルへの書き込み
     if write_json == True:
         with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f:
-            d_update = json.load(f)
-            print(d_update)
-        for reaction in d_update.keys():
-            if reaction == "Soprano_attend":
-                continue
-            else:
-                message.channel.send(reaction)
-        await message.channel.send("/finished コマンドを実行して更新作業を終了してください")
+            reaction = json.load(f)
+            print(reaction)
+        if reaction[num_reaction] == "Soprano_attend":
+            return
+        elif reaction[num_reaction] == "off_stage":
+            await message.channel.send("/finished コマンドを実行して更新作業を終了してください")
+        else:
+            message.channel.send(reaction[num_reaction])
+
 
 
 @tree.command(name="update_reactions-id", description="出欠席リアクションIDを更新します") 
 async def start_update_reaction(interaction: discord.Interaction): 
     global write_json
+    global num_reaction
     write_json = True
+    num_reaction = 0
     await interaction.response.send_message("出欠席リアクションのIDを更新します。リアクションに対応するものを返信してください。\nSoprano_attend")
 
 
