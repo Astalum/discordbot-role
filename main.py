@@ -48,13 +48,13 @@ async def on_message(message, write_json):
 
 
 @tree.command(name="update_reactions-id", description="出欠席リアクションIDを更新します") 
-async def start_update_reaction(write_json, interaction: discord.Interaction): 
+async def start_update_reaction(interaction: discord.Interaction, write_json: bool): 
     write_json = True
     await interaction.response.send_message("出欠席リアクションのIDを更新します。リアクションに対応するものを返信してください。\nSoprano_attend")
 
 
 @tree.command(name="finished", description="出欠席リアクションIDの更新を終了します") 
-async def finish_update_reaction(write_json, interaction: discord.Interaction): 
+async def finish_update_reaction(interaction: discord.Interaction, write_json :bool): 
     write_json = False
     await interaction.response.send_message("出欠席リアクションの更新を終了しました。@メンションをして正しく設定されているかを確認してください。")
 
