@@ -41,12 +41,9 @@ async def on_message(message):
     if write_json == True:
         with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f:
             reaction_dict = json.load(f)
-            print(reaction_list)
         reaction_list = list(reaction_dict)
-        if reaction_list[reaction_num] == "Soprano_attend":
-            
-            return
-        elif reaction_list[reaction_num] == "off_stage":
+        print(reaction_list)
+        if reaction_list[reaction_num] == "off_stage":
             await message.channel.send("/finished コマンドを実行して更新作業を終了してください")
         else:
             message.channel.send(reaction_list[reaction_num])
@@ -58,7 +55,7 @@ async def start_update_reaction(interaction: discord.Interaction):
     global write_json
     global reaction_num
     write_json = True
-    reaction_num = 0
+    reaction_num = 1
     await interaction.response.send_message("出欠席リアクションのIDを更新します。リアクションに対応するものを返信してください。\nSoprano_attend")
 
 
