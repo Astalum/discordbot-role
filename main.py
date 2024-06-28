@@ -40,7 +40,7 @@ async def on_message(message):
     if write_json == True:
         with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f:
             d_update = json.load(f)
-            # print(d_update)
+            print(d_update)
         for reaction in d_update.keys():
             if reaction == "Soprano_attend":
                 continue
