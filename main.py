@@ -56,7 +56,7 @@ async def start_update_reaction(interaction: discord.Interaction):
     global write_json
     global reaction_num
     write_json = True
-    reaction_num = 1
+    reaction_num = 0
     await interaction.response.send_message("出欠席リアクションのIDを更新します。リアクションに対応するものを返信してください。\nSoprano_attend")
 
 
