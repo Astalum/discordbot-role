@@ -8,7 +8,7 @@ intents = discord.Intents.all()
 client=discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
-write_json=False
+write_json = False
 
 # bot起動時に発火
 @client.event
@@ -47,13 +47,13 @@ async def on_message(message, write_json):
         await message.channel.send("/finished コマンドを実行して更新作業を終了してください")
 
 
-@tree.command(name="update_reactions-id", description="出欠席リアクションIDを更新します") 
+@tree.command(write_json, name="update_reactions-id", description="出欠席リアクションIDを更新します") 
 async def start_update_reaction(interaction: discord.Interaction): 
     write_json = True
     await interaction.response.send_message("出欠席リアクションのIDを更新します。リアクションに対応するものを返信してください。\nSoprano_attend")
 
 
-@tree.command(name="finished", description="出欠席リアクションIDの更新を終了します") 
+@tree.command(write_json, name="finished", description="出欠席リアクションIDの更新を終了します") 
 async def finish_update_reaction(interaction: discord.Interaction): 
     write_json = False
     await interaction.response.send_message("出欠席リアクションの更新を終了しました。@メンションをして正しく設定されているかを確認してください。")
