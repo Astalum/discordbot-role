@@ -7,6 +7,6 @@
     "Tenor_absent": null,
     "Bass_attend": null,
     "Bass_absent": null,
-    "Delay": null,
+    "delay": null,
     "off_stage": null
 }
