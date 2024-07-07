@@ -47,7 +47,7 @@ async def on_message(message):
             await message.channel.send("/finished コマンドを実行して更新作業を終了してください")
         else:
             await message.channel.send(reaction_list[reaction_num + 1])
-        print(reaction_dict)
+        # print(reaction_dict)
         # reaction_dict(reaction_num) = message.contents()
         reaction_num += 1
 
