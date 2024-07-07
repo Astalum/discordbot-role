@@ -39,16 +39,17 @@ async def on_message(message):
     
     # JSONファイルへの書き込み
     if write_json == True:
-        with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f:
-            reaction_dict = json.load(f)
+        with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f_r:
+            reaction_dict = json.load(f_r)
         reaction_list = list(reaction_dict)
         # print(reaction_list)
-        with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','w') as f:
-            if reaction_list[reaction_num] == "off_stage":
-                await message.channel.send("/finished コマンドを実行して更新作業を終了してください")
-            else:
-                reaction_num += 1
-                await message.channel.send(reaction_list[reaction_num])
+        if reaction_num + 2 > len(reaction_list):
+            await message.channel.send("/finished コマンドを実行して更新作業を終了してください")
+        else:
+            await message.channel.send(reaction_list[reaction_num + 1])
+        print(reaction_dict)
+        # reaction_dict(reaction_num) = message.contents()
+        reaction_num += 1
 
 
 @tree.command(name="update_reactions-id", description="出欠席リアクションIDを更新します") 
