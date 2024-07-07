@@ -42,14 +42,16 @@ async def on_message(message):
         with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f_r:
             reaction_dict = json.load(f_r)
         reaction_list = list(reaction_dict)
-        # print(reaction_list)
+        # print(reaction_dict)
         if reaction_num + 2 > len(reaction_list):
             await message.channel.send("/finished コマンドを実行して更新作業を終了してください")
         else:
             await message.channel.send(reaction_list[reaction_num + 1])
-        # print(reaction_dict)
-        # reaction_dict(reaction_num) = message.contents()
-        reaction_num += 1
+        if reaction_num <= len(reaction_list):
+            dict_key = reaction_list[reaction_num]
+            reaction_dict[dict_key] = message.content
+            reaction_num += 1
+        print(reaction_dict)
 
 
 @tree.command(name="update_reactions-id", description="出欠席リアクションIDを更新します") 
