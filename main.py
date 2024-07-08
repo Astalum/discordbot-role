@@ -31,13 +31,16 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    # ユーザーからのメンションを受け取った場合、そのメッセージにリアクションをつける
+    # ユーザーからのメンションを受け取った場合、そのメッセージにリアクションをつけ、スレッドを作る
     if client.user in message.mentions:
         with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f_r:
             reaction_dict = json.load(f_r)
         reaction_list = list(reaction_dict)
-        for emoji in reaction_list:
-            await message.add_reaction(reaction_dict[emoji])
+        channel =message.channel
+        thread = await channel.create_thread(name="")
+        await thread.send("調整中です")
+        # for emoji in reaction_list:
+        #     await message.add_reaction(reaction_dict[emoji])
     
     # JSONファイルへの書き込み
     if write_json == True:
