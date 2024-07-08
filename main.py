@@ -39,8 +39,8 @@ async def on_message(message):
         channel =message.channel
         thread = await channel.create_thread(name="諸連絡", message=message, type=discord.ChannelType.public_thread)
         await thread.send("調整中です")
-        # for emoji in reaction_list:
-        #     await message.add_reaction(reaction_dict[emoji])
+        for emoji in reaction_list:
+            await message.add_reaction(reaction_dict[emoji])
     
     # JSONファイルへの書き込み
     if write_json == True:
