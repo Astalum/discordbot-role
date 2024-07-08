@@ -33,9 +33,11 @@ async def on_message(message):
 
     # ユーザーからのメンションを受け取った場合、そのメッセージにリアクションをつける
     if client.user in message.mentions:
-        emoji_list = ["<:delay:1224985952393625630>","<:mozuku:1252115584624099370>","<:naetoru:1252115727599538279>"]
-        for emoji in emoji_list:
-            await message.add_reaction(emoji)
+        with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f_r:
+            reaction_dict = json.load(f_r)
+        reaction_list = list(reaction_dict)
+        for emoji in reaction_list:
+            await message.add_reaction(reaction_dict[emoji])
     
     # JSONファイルへの書き込み
     if write_json == True:
@@ -53,7 +55,7 @@ async def on_message(message):
             reaction_num += 1
             with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','w') as f_w:
                 json.dump(reaction_dict, f_w, indent=4)
-        print(reaction_dict)
+        # print(reaction_dict)
 
 
 @tree.command(name="update_reactions-id", description="出欠席リアクションIDを更新します") 
