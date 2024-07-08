@@ -51,6 +51,8 @@ async def on_message(message):
             dict_key = reaction_list[reaction_num]
             reaction_dict[dict_key] = message.content
             reaction_num += 1
+            with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','w') as f_w:
+                json.dump(reaction_dict, f_w, indent=4)
         print(reaction_dict)
 
 
