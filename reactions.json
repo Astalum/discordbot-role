@@ -1,12 +1,12 @@
 {
-    "Soprano_attend": null,
-    "Soprano_absent": null,
-    "Alto_attend": null,
-    "Alto_absent": null,
-    "Tenor_attend": null,
-    "Tenor_absent": null,
-    "Bass_attend": null,
-    "Bass_absent": null,
-    "delay": null,
-    "off_stage": null
+    "Soprano_attend": "l",
+    "Soprano_absent": "l",
+    "Alto_attend": "l",
+    "Alto_absent": "l",
+    "Tenor_attend": "l",
+    "Tenor_absent": "l",
+    "Bass_attend": "l",
+    "Bass_absent": "l",
+    "delay": "l",
+    "off_stage": "l"
 }
