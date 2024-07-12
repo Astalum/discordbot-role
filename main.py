@@ -33,7 +33,7 @@ async def on_message(message):
 
     # ユーザーからのメンションを受け取った場合、そのメッセージにリアクションをつけ、スレッドを作る
     if client.user in message.mentions:
-        with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f_r:
+        with open('./reactions.json','r') as f_r:
             reaction_dict = json.load(f_r)
         reaction_list = list(reaction_dict)
         channel =message.channel
@@ -44,7 +44,7 @@ async def on_message(message):
     
     # JSONファイルへの書き込み
     if write_json == True:
-        with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','r') as f_r:
+        with open('./reactions.json','r') as f_r:
             reaction_dict = json.load(f_r)
         reaction_list = list(reaction_dict)
         # print(reaction_dict)
@@ -56,7 +56,7 @@ async def on_message(message):
             dict_key = reaction_list[reaction_num]
             reaction_dict[dict_key] = message.content
             reaction_num += 1
-            with open('/home/astalum/discordbot/konsei/discordbot-attend/reactions.json','w') as f_w:
+            with open('./reactions.json','w') as f_w:
                 json.dump(reaction_dict, f_w, indent=4)
         # print(reaction_dict)
 
