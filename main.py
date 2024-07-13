@@ -41,7 +41,7 @@ async def on_message(message):
         await thread.send("遅刻・欠席・その他連絡はこちらから！")
         for emoji in reaction_list:
             emoji_id="<:"+emoji+":"+reaction_dict[emoji]+">"
-            await message.add_reaction(reaction_dict[emoji_id])
+            await message.add_reaction(emoji_id)
     
     # JSONファイルへの書き込み
     if write_json == True:
