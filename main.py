@@ -38,7 +38,7 @@ async def on_message(message):
         reaction_list = list(reaction_dict)
         channel =message.channel
         thread = await channel.create_thread(name="諸連絡", message=message, type=discord.ChannelType.public_thread)
-        await thread.send("調整中です")
+        await thread.send("遅刻・欠席・その他連絡はこちらから！")
         for emoji in reaction_list:
             emoji_id="<:"+emoji+":"+reaction_dict[emoji]+">"
             await message.add_reaction(reaction_dict[emoji_id])
