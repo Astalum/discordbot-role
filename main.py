@@ -16,9 +16,9 @@ async def on_ready():
     print("bot is online!")
     global write_json
     # アクティビティを設定 
-    new_activity = f"出欠席リアクション" 
+    # new_activity = f"出欠席リアクション" 
     write_json = False
-    await client.change_presence(activity=discord.Game(new_activity)) 
+    await client.change_presence(activity=discord.Game()) 
     # スラッシュコマンドを同期 
     await tree.sync()
 
@@ -40,7 +40,8 @@ async def on_message(message):
         thread = await channel.create_thread(name="諸連絡", message=message, type=discord.ChannelType.public_thread)
         await thread.send("調整中です")
         for emoji in reaction_list:
-            await message.add_reaction(reaction_dict[emoji])
+            emoji_id="<:"+reaction_list[emoji]+":"+reaction_dict[emoji]
+            await message.add_reaction(reaction_dict[emoji_id])
     
     # JSONファイルへの書き込み
     if write_json == True:
