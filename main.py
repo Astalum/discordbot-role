@@ -18,7 +18,7 @@ async def on_ready():
     # アクティビティを設定 
     new_activity = f"出欠席リアクション" 
     write_json = False
-    await client.change_presence(activity=discord.Game(new_activity)) 
+    await client.change_presence(activity=discord.Game(name=new_activity)) 
     # スラッシュコマンドを同期 
     await tree.sync()
 
