@@ -7,4 +7,4 @@ if [[ -e ${ENV_FILE_PATH} ]]; then
 fi
 
 # Start the Docker container
-Docker run --name attender -it python:3.11.9 /bin/bash
+docker run --name attender -it python:3.11.9 /bin/bash
