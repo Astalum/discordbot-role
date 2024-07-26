@@ -8,6 +8,7 @@ intents = discord.Intents.all()
 client=discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
+path_json = '/app/src/reactions.json'
 write_json=False
 
 # bot起動時に発火
@@ -15,11 +16,11 @@ write_json=False
 async def on_ready():
     print("bot is online!")
     global write_json
-    # アクティビティを設定 
-    new_activity = f"出欠席リアクション" 
+    # アクティビティを設定
+    new_activity = f"出欠席リアクション"
     write_json = False
-    await client.change_presence(activity=discord.Game(name=new_activity)) 
-    # スラッシュコマンドを同期 
+    await client.change_presence(activity=discord.Game(name=new_activity))
+    # スラッシュコマンドを同期
     await tree.sync()
 
 # メッセージの検知
@@ -27,13 +28,14 @@ async def on_ready():
 async def on_message(message):
     global write_json
     global reaction_num
+    global path_json
     # 自身が送信したメッセージには反応しない
     if message.author == client.user:
         return
 
     # ユーザーからのメンションを受け取った場合、そのメッセージにリアクションをつけ、スレッドを作る
     if client.user in message.mentions:
-        with open('./reactions.json','r') as f_r:
+        with open(path_json,'r') as f_r:
             reaction_dict = json.load(f_r)
         reaction_list = list(reaction_dict)
         channel =message.channel
@@ -42,10 +44,10 @@ async def on_message(message):
         for emoji in reaction_list:
             emoji_id="<:"+emoji+":"+reaction_dict[emoji]+">"
             await message.add_reaction(emoji_id)
-    
+
     # JSONファイルへの書き込み
     if write_json == True:
-        with open('./reactions.json','r') as f_r:
+        with open(path_json,'r') as f_r:
             reaction_dict = json.load(f_r)
         reaction_list = list(reaction_dict)
         # print(reaction_dict)
@@ -57,13 +59,13 @@ async def on_message(message):
             dict_key = reaction_list[reaction_num]
             reaction_dict[dict_key] = message.content
             reaction_num += 1
-            with open('./reactions.json','w') as f_w:
+            with open(path_json,'w') as f_w:
                 json.dump(reaction_dict, f_w, indent=4)
         # print(reaction_dict)
 
 
-@tree.command(name="update_reactions-id", description="出欠席リアクションIDを更新します") 
-async def start_update_reaction(interaction: discord.Interaction): 
+@tree.command(name="update_reactions-id", description="出欠席リアクションIDを更新します")
+async def start_update_reaction(interaction: discord.Interaction):
     global write_json
     global reaction_num
     write_json = True
@@ -71,8 +73,8 @@ async def start_update_reaction(interaction: discord.Interaction):
     await interaction.response.send_message("出欠席リアクションのIDを更新します。リアクションに対応するものを返信してください。\nSoprano_attend")
 
 
-@tree.command(name="finished", description="出欠席リアクションIDの更新を終了します") 
-async def finish_update_reaction(interaction: discord.Interaction): 
+@tree.command(name="finished", description="出欠席リアクションIDの更新を終了します")
+async def finish_update_reaction(interaction: discord.Interaction):
     global write_json
     write_json = False
     await interaction.response.send_message("出欠席リアクションの更新を終了しました。@メンションをして正しく設定されているかを確認してください。")

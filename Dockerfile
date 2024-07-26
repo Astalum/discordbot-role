@@ -1,9 +1,11 @@
-FROM Python:3.11.9
+FROM python:3.11.9
 
-WORKDIR /home/astalum/
+WORKDIR /app
 
-COPY /home/astalum/discordbot/konsei/discordbot-attend /home/astalum/
+COPY ./src/requirements.txt ./src/
 
-RUN pip install -r requirements.txt
+RUN pip install -r src/requirements.txt
 
-CMD ["python3", "main.py"]
+COPY . .
+
+CMD ["python3", "src/main.py"]
