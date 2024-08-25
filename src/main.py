@@ -9,7 +9,10 @@ intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
+# dockercontainer用
 path_json = "/app/src/reactions.json"
+# local用
+path_json = "/home/astalum/discordbot/konsei/discordbot-attend/reactions.json"
 write_json = False
 
 
