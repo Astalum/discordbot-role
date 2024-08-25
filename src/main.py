@@ -10,11 +10,11 @@ client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
 # dockercontainer用
-# path_json = "/app/src/reactions.json"
-# path_txt = "/app/src/id.txt"
+path_json = "/app/src/reactions.json"
+path_txt = "/app/src/id.txt"
 # local用
-path_json = "./reactions.json"
-path_txt = "./id.txt"
+# path_json = "./reactions.json"
+# path_txt = "./id.txt"
 write_json = False
 write_txt = False
 
