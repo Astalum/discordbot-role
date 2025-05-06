@@ -1,118 +1,207 @@
 import discord
-import config
-from discord import app_commands
-
-# import re
+from discord.ext import commands
+import asyncio
 import json
+import config
 
-intents = discord.Intents.all()
-client = discord.Client(intents=intents)
-tree = app_commands.CommandTree(client)
+intents = discord.Intents.default()
+intents.message_content = True
+intents.reactions = True
+intents.messages = True
+intents.members = True
 
-# dockercontainer用
-path_json = "/app/src/reactions.json"
-path_txt = "/app/src/id.txt"
-# local用
-# path_json = "./reactions.json"
-# path_txt = "./id.txt"
-write_json = False
-write_txt = False
+bot = commands.Bot(command_prefix='/', intents=intents)
 
+user_settings = {}
 
-# bot起動時に発火
-@client.event
+@bot.event
 async def on_ready():
-    print("bot is online!")
-    global write_json
-    global write_txt
-    # アクティビティを設定
-    new_activity = f"出欠席リアクション"
-    write_json = False
-    write_txt = False
-    await client.change_presence(activity=discord.Game(name=new_activity))
-    # スラッシュコマンドを同期
-    await tree.sync()
+    print(f'✅ ログインしました: {bot.user}')
 
 
-# メッセージの検知
-@client.event
-async def on_message(message):
-    global write_json
-    global write_txt
-    global reaction_num
-    global path_json
-    # 自身が送信したメッセージには反応しない
-    if message.author == client.user:
+@bot.event
+async def on_member_join(member):
+    await asyncio.sleep(1)  # 少し待機（Discord APIの都合で必要な場合がある）
+
+    # サーバーの「はじめに」チャンネルを取得
+    intro_channel = discord.utils.get(member.guild.text_channels, name="はじめに")
+
+    if intro_channel is None:
+        print("❌『はじめに』チャンネルが見つかりませんでした。")
         return
 
-    # ユーザーからのメンションを受け取った場合、そのメッセージにリアクションをつけ、スレッドを作る
-    if client.user in message.mentions:
-        with open(path_json, "r") as f_json:
-            reaction_dict = json.load(f_json)
-        reaction_list = list(reaction_dict)
-        with open(path_txt, "r") as f_txt:
-            len_id = len(f_txt.read())
-            # print(len_id)
-        len_id += 4
-        thread_name = message.content[len_id:]
-        channel = message.channel
-        # print(thread_name)
-        thread = await channel.create_thread(
-            name=thread_name, message=message, type=discord.ChannelType.public_thread
+    # チャンネルでセットアップ案内を送信し、DMでセットアップ開始
+    try:
+        await intro_channel.send(
+            f"🎉 ようこそ {member.mention} さん！\n最初にいくつか設定をお願いします。DMを確認してください。"
         )
-        await thread.send("遅刻・欠席・その他連絡はこちらから！")
-        for emoji in reaction_list:
-            emoji_id = "<:" + emoji + ":" + reaction_dict[emoji] + ">"
-            await message.add_reaction(emoji_id)
-    # JSONファイルへの書き込み
-    if write_json == True:
-        with open(path_json, "r") as f_r:
-            reaction_dict = json.load(f_r)
-        reaction_list = list(reaction_dict)
-        # print(reaction_dict)
-        if reaction_num + 2 > len(reaction_list):
-            write_json = False
-            await message.channel.send(
-                "出欠席リアクションの設定を終了しました。@メンションをして正しく設定されているかを確認してください。"
-            )
+
+        # DMで setup を実行
+        dm_channel = await member.create_dm()
+        await dm_channel.send("👋 はじめまして！以下のステップで簡単な初期設定を行います。")
+        await run_setup_flow(member, dm_channel)
+    except Exception as e:
+        print(f"⚠️ 初期設定送信中にエラー: {e}")
+
+
+async def run_setup_flow(user, channel):
+    def msg_check(m):
+        return m.author == user and m.channel == channel
+
+    data = {}
+
+    embed_list=[]
+    # 名前（漢字）
+    embed_list.append(discord.Embed(
+        title="1️⃣ 名前（漢字）を入力してください",
+        color=discord.Color.blue()
+    ))
+    await channel.send(embed=embed_list[0])
+    msg = await bot.wait_for("message", check=msg_check)
+    data["name_kanji"] = msg.content.strip()
+
+    # 名前（カナ）
+    embed_list.append(discord.Embed(
+        title="2️⃣ 名前（カナ）を入力してください",
+        color=discord.Color.blue()
+    ))
+    await channel.send(embed=embed_list[1])
+    msg = await bot.wait_for("message", check=msg_check)
+    data["name_kana"] = msg.content.strip()
+
+    # 誕生月
+    embed_list.append(discord.Embed(
+        title="3️⃣ 誕生月を入力してください",
+        description="例：4月生まれ → `04`",
+        color=discord.Color.blue()
+    ))
+    await channel.send(embed=embed_list[2])
+    while True:
+        msg = await bot.wait_for("message", check=msg_check)
+        if msg.content.strip().isdigit() and 1 <= int(msg.content.strip()) <= 12:
+            data["birth_month"] = msg.content.strip().zfill(2)
+            break
         else:
-            await message.channel.send(reaction_list[reaction_num + 1])
-        if reaction_num <= len(reaction_list):
-            dict_key = reaction_list[reaction_num]
-            reaction_dict[dict_key] = message.content
-            reaction_num += 1
-            with open(path_json, "w") as f_w:
-                json.dump(reaction_dict, f_w, indent=4)
-        # print(reaction_dict)
-    # TXTファイルへの書き込み
-    if write_txt == True:
-        with open(path_txt, "w") as f_w:
-            f_w.write(message.content)
-        write_txt = False
-        await message.channel.send("アプリIDの設定が完了しました")
+            await channel.send("❌ 1〜12の数字を2桁（例: 04）で入力してください。")
 
+    # 誕生日
+    embed_list.append(discord.Embed(
+        title="4️⃣ 誕生日を入力してください",
+        description="例：2日 → `02`",
+        color=discord.Color.blue()
+    ))
+    await channel.send(embed=embed_list[3])
+    while True:
+        msg = await bot.wait_for("message", check=msg_check)
+        if msg.content.strip().isdigit() and 1 <= int(msg.content.strip()) <= 31:
+            data["birth_day"] = msg.content.strip().zfill(2)
+            break
+        else:
+            await channel.send("❌ 1〜31の数字を2桁（例: 02）で入力してください。")
 
-@tree.command(
-    name="update_reactions-id", description="出欠席リアクションIDを設定します"
-)
-async def start_update_reaction(interaction: discord.Interaction):
-    global write_json
-    global reaction_num
-    write_json = True
-    reaction_num = 0
-    await interaction.response.send_message(
-        "出欠席リアクションのIDを設定します。リアクションに対応するものを返信してください。\nSoprano_attend"
+    # 期
+    embed_list.append(discord.Embed(
+        title="5️⃣ 期を入力してください",
+        color=discord.Color.blue()
+    ))
+    await channel.send(embed=embed_list[4])
+    msg = await bot.wait_for("message", check=msg_check)
+    data["term"] = msg.content.strip()
+
+    # パート（リアクション選択）
+    embed_list.append(discord.Embed(
+        title="6️⃣ パートを選択してください",
+        description="🎵 ソプラノ\n🎶 アルト\n🎼 テノール\n🎹 バス\n\n該当する絵文字をクリックしてください。",
+        color=discord.Color.blue()
+    ))
+    msg = await channel.send(embed=embed_list[5])
+    part_emojis = {
+        "🎵": "S",
+        "🎶": "A",
+        "🎼": "T",
+        "🎹": "B"
+    }
+    for emoji in part_emojis:
+        await msg.add_reaction(emoji)
+
+    def reaction_check(reaction, user_):
+        return (
+            user_ == user
+            and reaction.message.id == msg.id
+            and str(reaction.emoji) in part_emojis
+        )
+
+    reaction, _ = await bot.wait_for("reaction_add", check=reaction_check)
+    data["part"] = part_emojis[str(reaction.emoji)]
+
+    # 保存と完了メッセージ
+    user_settings[user.id] = data
+    save_user_settings(user_settings)  # 保存処理（ファイル保存用）
+
+    embed_done = discord.Embed(
+        title="✅ 初期設定が完了しました！",
+        description=(
+            f"**名前（漢字）**: {data['name_kanji']}\n"
+            f"**名前（カナ）**: {data['name_kana']}\n"
+            f"**誕生日**: {data['birth_month']}月{data['birth_day']}日\n"
+            f"**期**: {data['term']}\n"
+            f"**パート**: {data['part']}"
+        ),
+        color=discord.Color.green()
     )
+    await channel.send(embed=embed_done)
+
+    # ギルドIDをファイルから読み込む
+    guild_id = read_guild_id_from_file()
+    if guild_id is None:
+        await channel.send("⚠️ サーバーIDが正しく読み込めませんでした。管理者にお問い合わせください。")
+        return
+
+    # ギルドをサーバーIDで取得
+    guild = bot.get_guild(guild_id)
+    if guild is None:
+        await channel.send("⚠️ サーバーが見つかりませんでした。Botが参加しているか確認してください。")
+        return
+
+    # ロール取得
+    role = discord.utils.get(guild.roles, name=config.CONFIRMATION_ROLE_NAME)
+    if role is None:
+        await channel.send("⚠️ ロールが見つかりませんでした。管理者にお問い合わせください。")
+        return
+
+    # メンバー取得とロール付与
+    member = guild.get_member(user.id)
+    if member:
+        await member.add_roles(role)
+        await channel.send(f"🎉 `{role.name}` ロールが付与されました！")
+
+        # ニックネーム変更処理
+        new_nickname = f"{data['name_kanji']}/{data['term']}{data['part']}"
+        try:
+            await member.edit(nick=new_nickname)
+            await channel.send(f"✅ ニックネームを「{new_nickname}」に変更しました。")
+        except discord.Forbidden:
+            await channel.send("⚠️ ニックネームを変更できませんでした。Botに権限があるか確認してください。")
+    else:
+        await channel.send("⚠️ サーバーメンバーが見つかりませんでした。")
 
 
-@tree.command(name="update_bot-id", description="botのアプリIDを設定します")
-async def finish_update_reaction(interaction: discord.Interaction):
-    global write_txt
-    write_txt = True
-    await interaction.response.send_message(
-        "botのアプリIDを設定します。アプリIDを返信してください。"
-    )
+def save_user_settings(data, filename="./src/user_settings.json"):
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-# Bot起動
-client.run(config.DISCORD_TOKEN)
+def read_guild_id_from_file(filename="src/guild_id.txt"):
+    try:
+        with open(filename, "r") as f:
+            guild_id = f.read().strip()
+            return int(guild_id)  # ファイルから読み込んだIDを整数として返す
+    except FileNotFoundError:
+        print(f"❌ {filename} が見つかりませんでした。")
+        return None
+    except ValueError:
+        print("❌ guild_id.txt に無効なIDが含まれています。")
+        return None
+
+
+bot.run(config.DISCORD_TOKEN)
