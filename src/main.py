@@ -304,7 +304,7 @@ async def run_setup_flow(user, channel):
             f"**名前（カナ）**: {data['name_kana']}\n"
             f"**誕生日**: {data['birth_month']}月{data['birth_day']}日\n"
             f"**期**: {data['term']}\n"
-            f"**パート**: {data['part']}"
+            f"**パート**: {data['part']}\n"
             f"**新入生**: {'はい' if data['is_newcomer'] else 'いいえ'}"
         ),
         color=discord.Color.green(),
@@ -337,18 +337,81 @@ async def run_setup_flow(user, channel):
     if member:
         await member.add_roles(role)
         await channel.send(f"🎉 `{role.name}` ロールが付与されました！")
+
+        execution_term = read_term_of_execution_from_file()
+        if execution_term is None:
+            await channel.send("⚠️ term_of_execution.txt が読み込めませんでした。")
+            return
+
+        try:
+            user_term = int(data["term"])
+        except ValueError:
+            await channel.send("⚠️ 入力された期が整数ではありません。")
+            return
+
+        min_role_term = execution_term - 1
+        max_role_term = execution_term + 2
+
+        if user_term <= min_role_term:
+            term_role_name = f"{min_role_term}期以上"
+        elif user_term <= max_role_term:
+            term_role_name = f"{user_term}期"
+        else:
+            await channel.send(f"⚠️ `{user_term}期` は有効な期ロールの範囲外です。")
+            term_role_name = None
+
+        if term_role_name:
+            term_role = discord.utils.get(guild.roles, name=term_role_name)
+            if term_role:
+                await member.add_roles(term_role)
+                await channel.send(f"📌 `{term_role.name}` ロールを付与しました。")
+            else:
+                await channel.send(f"⚠️ `{term_role_name}` ロールが見つかりません。")
+
+        # ✅ 新入生ロールの付与（execution_term と一致した場合）
+        if user_term == execution_term:
+            freshman_role = discord.utils.get(guild.roles, name="新入生")
+            if freshman_role:
+                await member.add_roles(freshman_role)
+                await channel.send("🎓 `新入生` ロールを付与しました！")
+            else:
+                await channel.send("⚠️ `新入生` ロールが見つかりませんでした。")
+
+        # ✅ ← ネストの外に移動：パートロールと性別ロールは常に実行
+        part_role_map = {
+            "S": ("ソプラノ", "女声"),
+            "A": ("アルト", "女声"),
+            "T": ("テナー", "男声"),
+            "B": ("ベース", "男声"),
+        }
+
+        part_role_name, gender_role_name = part_role_map[data["part"]]
+        part_role = discord.utils.get(guild.roles, name=part_role_name)
+        gender_role = discord.utils.get(guild.roles, name=gender_role_name)
+
+        if part_role:
+            await member.add_roles(part_role)
+            await channel.send(f"🎵 `{part_role_name}` ロールを付与しました。")
+        else:
+            await channel.send(f"⚠️ `{part_role_name}` ロールが見つかりませんでした。")
+
+        if gender_role:
+            await member.add_roles(gender_role)
+            await channel.send(f"🧑 `{gender_role_name}` ロールを付与しました。")
+        else:
+            await channel.send(f"⚠️ `{gender_role_name}` ロールが見つかりませんでした。")
+
+        # ニックネーム変更
+        new_nickname = f"{data['name_kanji']}/{data['term']}{data['part']}"
+        try:
+            await member.edit(nick=new_nickname)
+            await channel.send(f"✅ ニックネームを「{new_nickname}」に変更しました。")
+        except discord.Forbidden:
+            await channel.send(
+                "⚠️ ニックネームを変更できませんでした。Botに「ニックネームの変更」権限があるか確認してください。"
+            )
     else:
         await channel.send("⚠️ サーバーメンバーが見つかりませんでした。")
-
-    # ニックネーム変更処理
-    new_nickname = f"{data['name_kanji']}/{data['term']}{data['part']}"
-    try:
-        await member.edit(nick=new_nickname)
-        await channel.send(f"✅ ニックネームを「{new_nickname}」に変更しました。")
-    except discord.Forbidden:
-        await channel.send(
-            "⚠️ ニックネームを変更できませんでした。Botに「ニックネームの変更」権限があるか確認してください。"
-        )
 
 
 def save_user_settings(data, filename="./src/user_settings.json"):
@@ -366,6 +429,14 @@ def read_guild_id_from_file(filename="src/guild_id.txt"):
         return None
     except ValueError:
         print("❌ guild_id.txt に無効なIDが含まれています。")
+        return None
+
+
+def read_term_of_execution_from_file(filename="src/term_of_execution.txt"):
+    try:
+        with open(filename, "r") as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
         return None
 
 
