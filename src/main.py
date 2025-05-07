@@ -40,7 +40,7 @@ async def on_member_join(member):
         # DMで setup を実行
         dm_channel = await member.create_dm()
         await dm_channel.send(
-            "👋 はじめまして！以下のステップで簡単な初期設定を行います。"
+            "👋 はじめまして！初期設定を行います、必要事項を入力してください。"
         )
         await run_setup_flow(member, dm_channel)
     except Exception as e:
