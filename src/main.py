@@ -140,6 +140,26 @@ async def run_setup_flow(user, channel):
         reaction, _ = await bot.wait_for("reaction_add", check=reaction_check)
         data["part"] = part_emojis[str(reaction.emoji)]
 
+        # 新入団員確認
+        embed = discord.Embed(
+            title="7️⃣ あなたは新入団員ですか？",
+            description="✅：はい\n❎：いいえ\n\n該当するリアクションをクリックしてください。",
+            color=discord.Color.blue(),
+        )
+        msg = await channel.send(embed=embed)
+        await msg.add_reaction("✅")
+        await msg.add_reaction("❎")
+
+        def newcomer_check(reaction, user_):
+            return (
+                user_ == user
+                and reaction.message.id == msg.id
+                and str(reaction.emoji) in ["✅", "❎"]
+            )
+
+        reaction, _ = await bot.wait_for("reaction_add", check=newcomer_check)
+        data["is_newcomer"] = str(reaction.emoji) == "✅"
+
     # 修正付き確認フェーズ
     async def confirm_inputs():
         while True:
@@ -151,8 +171,9 @@ async def run_setup_flow(user, channel):
                     f"3️⃣ **誕生月**: {data['birth_month']}\n"
                     f"4️⃣ **誕生日**: {data['birth_day']}\n"
                     f"5️⃣ **期**: {data['term']}\n"
-                    f"6️⃣ **パート**: {data['part']}\n\n"
-                    "✳️ 修正したい項目の絵文字を押してください。\n"
+                    f"6️⃣ **パート**: {data['part']}\n"
+                    f"7️⃣ **新入生**: {'はい' if data['is_newcomer'] else 'いいえ'}\n\n"
+                    "❗️ 修正したい項目の絵文字を押してください。\n"
                     "✅ 問題なければ確認完了です。"
                 ),
                 color=discord.Color.orange(),
@@ -165,6 +186,7 @@ async def run_setup_flow(user, channel):
                 "4️⃣": "birth_day",
                 "5️⃣": "term",
                 "6️⃣": "part",
+                "7️⃣": "is_newcomer",
                 "✅": "confirm",
             }
             for emoji in emoji_map:
@@ -247,6 +269,25 @@ async def run_setup_flow(user, channel):
 
                 reaction, _ = await bot.wait_for("reaction_add", check=part_check)
                 data["part"] = part_emojis[str(reaction.emoji)]
+            elif selected == "is_newcomer":
+                embed = discord.Embed(
+                    title="✏️ 新入団員かどうかを再選択してください：",
+                    description="✅：はい\n❎：いいえ\n\n該当するリアクションをクリックしてください。",
+                    color=discord.Color.blue(),
+                )
+                msg = await channel.send(embed=embed)
+                await msg.add_reaction("✅")
+                await msg.add_reaction("❎")
+
+                def newcomer_check(reaction, user_):
+                    return (
+                        user_ == user
+                        and reaction.message.id == msg.id
+                        and str(reaction.emoji) in ["✅", "❎"]
+                    )
+
+                reaction, _ = await bot.wait_for("reaction_add", check=newcomer_check)
+                data["is_newcomer"] = str(reaction.emoji) == "✅"
 
     # 実行フェーズ
     await input_all_fields()
@@ -264,6 +305,7 @@ async def run_setup_flow(user, channel):
             f"**誕生日**: {data['birth_month']}月{data['birth_day']}日\n"
             f"**期**: {data['term']}\n"
             f"**パート**: {data['part']}"
+            f"**新入生**: {'はい' if data['is_newcomer'] else 'いいえ'}"
         ),
         color=discord.Color.green(),
     )
