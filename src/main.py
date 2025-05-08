@@ -579,7 +579,7 @@ async def run_setup_flow(user, channel):
         else:
             await channel.send(f"⚠️ `{gender_role_name}` ロールが見つかりませんでした")
 
-        # ✅ 〇責ロールの付与
+        # 〇責ロールの付与
         if data["position"]["executive"]:
             executive_role = discord.utils.get(guild.roles, name="まるせき")
             if executive_role:
@@ -588,7 +588,7 @@ async def run_setup_flow(user, channel):
             else:
                 await channel.send("⚠️ `まるせき` ロールが見つかりませんでした")
 
-        # ✅ 〇技ロールの付与
+        # 〇技ロールの付与
         if data["position"]["technique"]:
             technique_role = discord.utils.get(guild.roles, name="まるぎ")
             parent_role = discord.utils.get(guild.roles, name="おやまる")
@@ -605,7 +605,7 @@ async def run_setup_flow(user, channel):
             else:
                 await channel.send("⚠️ `まるぎ` ロールが見つかりませんでした")
 
-        # ✅ 演実ロールの付与
+        # 演実ロールの付与
         if data["position"]["concert"]:
             concert_role = discord.utils.get(guild.roles, name="えんじつ")
             if concert_role:
