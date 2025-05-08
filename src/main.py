@@ -350,7 +350,8 @@ async def run_setup_flow(user, channel):
                 description=(
                     f"**🎩 〇責**: {'はい' if data['position']['executive'] else 'いいえ'}\n"
                     f"**🛠️ 〇技**: {'はい' if data['position']['technique'] else 'いいえ'}\n"
-                    f"**🎼 演実**: {'はい' if data['position']['concert'] else 'いいえ'}\n\n"
+                    f"**🎼 演実**: {'はい' if data['position']['concert'] else 'いいえ'}\n"
+                    f"**⚖️ 第三者**: {'はい' if data['position']['third_party'] else 'いいえ'}\n\n"
                     "❗️ 修正したい項目の絵文字を押してください\n"
                     "✅ 問題なければ確認完了です"
                 ),
@@ -361,6 +362,7 @@ async def run_setup_flow(user, channel):
                 "🎩": "executive",
                 "🛠️": "technique",
                 "🎼": "concert",
+                "⚖️": "third_party",
                 "✅": "confirm",
             }
             for emoji in emoji_map:
@@ -444,6 +446,28 @@ async def run_setup_flow(user, channel):
                 reaction, _ = await bot.wait_for("reaction_add", check=concert_check)
                 data["position"]["concert"] = str(reaction.emoji) == "✅"
 
+            elif selected == "third_party":
+                embed = discord.Embed(
+                    title="✏️ 第三者かどうかを再選択してください：",
+                    description="✅：はい\n❎：いいえ\n\n該当するリアクションをクリックしてください",
+                    color=discord.Color.blue(),
+                )
+                msg = await channel.send(embed=embed)
+                await msg.add_reaction("✅")
+                await msg.add_reaction("❎")
+
+                def third_party_check(reaction, user_):
+                    return (
+                        user_ == user
+                        and reaction.message.id == msg.id
+                        and str(reaction.emoji) in ["✅", "❎"]
+                    )
+
+                reaction, _ = await bot.wait_for(
+                    "reaction_add", check=third_party_check
+                )
+                data["position"]["third_party"] = str(reaction.emoji) == "✅"
+
     # 実行フェーズ
     await input_all_fields()
     await confirm_inputs_information()
@@ -471,6 +495,7 @@ async def run_setup_flow(user, channel):
             f"**〇責**: {'はい' if data['position']['executive'] else 'いいえ'}\n"
             f"**〇技**: {'はい' if data['position']['technique'] else 'いいえ'}\n"
             f"**演実**: {'はい' if data['position']['concert'] else 'いいえ'}"
+            f"**第三者**: {'はい' if data['position']['third_party'] else 'いいえ'}"
         ),
         color=discord.Color.green(),
     )
@@ -615,6 +640,15 @@ async def run_setup_flow(user, channel):
                 await channel.send("🎼 `えんじつ` ロールを付与しました！")
             else:
                 await channel.send("⚠️ `えんじつ` ロールが見つかりませんでした")
+
+        # 第三者ロールの付与
+        if data["position"]["third_party"]:
+            concert_role = discord.utils.get(guild.roles, name="第三者")
+            if concert_role:
+                await member.add_roles(concert_role)
+                await channel.send("⚖️ `第三者` ロールを付与しました！")
+            else:
+                await channel.send("⚠️ `第三者` ロールが見つかりませんでした")
 
     else:
         await channel.send("⚠️ サーバーメンバーが見つかりませんでした")
