@@ -918,40 +918,4 @@ async def set_term_of_execution(interaction: discord.Interaction):
     )
 
 
-@tasks.loop(time=time(hour=19, minute=0))  # 毎日19時に実行
-async def check_birthdays():
-    today = datetime.now()
-    today_month = today.month
-    today_day = today.day
-
-    try:
-        with open(user_settings.json, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except Exception as e:
-        print("ユーザー設定読み込みエラー:", e)
-        return
-
-    birthday_users = []
-    for user_id, info in data.items():
-        if (
-            info.get("birth_month") == today_month
-            and info.get("birth_day") == today_day
-        ):
-            name = info.get("name_kanji", "不明")
-            part = info.get("part", "不明")
-            term = info.get("term", "不明")
-            birthday_users.append(f"{name}（{term}期・{part}）")
-
-    if not birthday_users:
-        return
-
-    for guild in bot.guilds:
-        channel = discord.utils.get(guild.text_channels, name="副団長用")
-        if channel:
-            user_lines = "\n".join(f"🎉 {user}" for user in birthday_users)
-            await channel.send(
-                f"🎂 本日誕生日のメンバー:\n{user_lines}\nお祝いの準備をしましょう！"
-            )
-
-
 bot.run(config.DISCORD_TOKEN)
