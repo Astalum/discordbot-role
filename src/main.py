@@ -1,3 +1,4 @@
+import os
 import discord
 from discord.ext import commands
 import asyncio
@@ -17,6 +18,7 @@ user_settings = {}
 
 @bot.event
 async def on_ready():
+    await bot.tree.sync()
     print(f"✅ ログインしました: {bot.user}")
 
 
@@ -654,6 +656,71 @@ def extract_term_from_roles(member):
         if role.name.endswith("期") and role.name[:-1].isdigit():
             return int(role.name[:-1])
     return None
+
+
+@bot.tree.command(
+    name="set_server-id", description="guild_id.txt にサーバーIDを記録します"
+)
+async def set_server_id(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "書き込みたいサーバーIDをこのチャンネルで送ってください。"
+    )
+
+    def check(m):
+        return m.author == interaction.user and m.channel == interaction.channel
+
+    try:
+        msg = await bot.wait_for(
+            "message", check=check, timeout=60.0
+        )  # 60秒のタイムアウト
+    except asyncio.TimeoutError:
+        await interaction.followup.send(
+            "⚠️ 時間切れです。もう一度 `/set_server-id` を実行してください。"
+        )
+        return
+
+    file_path = os.path.join(os.path.dirname(__file__), "guild_id.txt")
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(f"{msg.content}\n")
+
+    await interaction.followup.send("✅ サーバーIDを `guild_id.txt` に書き込みました。")
+
+
+@bot.tree.command(
+    name="set_term-of-execution",
+    description="term_of_execution.txt に執行代を記録します",
+)
+async def set_term_of_execution(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "執行代の期を数字のみでこのチャンネルで送ってください。"
+    )
+
+    def check(m):
+        return m.author == interaction.user and m.channel == interaction.channel
+
+    try:
+        msg = await bot.wait_for(
+            "message", check=check, timeout=60.0
+        )  # 60秒のタイムアウト
+    except asyncio.TimeoutError:
+        await interaction.followup.send(
+            "⚠️ 時間切れです。もう一度 `/set_term-of-execution` を実行してください。"
+        )
+        return
+
+    if not msg.content.isdigit():
+        await interaction.followup.send(
+            "⚠️ 入力は数字のみでお願いします。もう一度 `/set_term-of-execution` を実行してください。"
+        )
+        return
+
+    file_path = os.path.join(os.path.dirname(__file__), "term_of_execution.txt")
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(f"{msg.content}\n")
+
+    await interaction.followup.send(
+        "✅ 執行代を `term_of_execution.txt` に書き込みました。"
+    )
 
 
 bot.run(config.DISCORD_TOKEN)
