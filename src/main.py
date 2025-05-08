@@ -311,6 +311,7 @@ async def run_setup_flow(user, channel):
                 ("あなたは〇責に所属していますか？", "executive"),
                 ("あなたは〇技に所属していますか？", "technique"),
                 ("あなたは演実に所属していますか？", "concert"),
+                ("あなたは第三者に所属していますか？", "third_party"),
             ]
 
             # 質問を順番に送信し、リアクションで返答を受け取る
@@ -468,6 +469,133 @@ async def run_setup_flow(user, channel):
                 )
                 data["position"]["third_party"] = str(reaction.emoji) == "✅"
 
+    async def prompt_reaction_job():
+        execution_term = read_term_of_execution_from_file()
+        if (int(data["term"]) not in [execution_term, execution_term + 1]) or data[
+            "is_newcomer"
+        ]:
+            return
+        else:
+            # 役職の確認フロー（リアクション応答）
+            jobs = {
+                "vice": False,
+                "publicity": False,
+            }
+
+            questions = [
+                ("あなたは副団長ですか？", "vice"),
+                ("あなたは〇運広報ですか？", "publicity"),
+            ]
+
+            # 質問を順番に送信し、リアクションで返答を受け取る
+            await channel.send("続いて役職情報の入力に移ります")
+            for question, role in questions:
+                embed = discord.Embed(
+                    title=question,
+                    description="✅：はい\n❎：いいえ",
+                    color=discord.Color.blue(),
+                )
+                msg = await channel.send(embed=embed)
+                await msg.add_reaction("✅")
+                await msg.add_reaction("❎")
+
+                def reaction_check(reaction, user_):
+                    return (
+                        user_ == user
+                        and reaction.message.id == msg.id
+                        and str(reaction.emoji) in ["✅", "❎"]
+                    )
+
+                reaction, _ = await bot.wait_for("reaction_add", check=reaction_check)
+
+                if str(reaction.emoji) == "✅":
+                    jobs[role] = True
+                elif str(reaction.emoji) == "❎":
+                    jobs[role] = False
+
+            # 最終的に `data["position"]` に保存
+            data["job"] = jobs
+
+    # 修正付き確認フェーズ
+    async def confirm_inputs_job():
+        while True:
+            confirm_embed = discord.Embed(
+                title="📝 入力内容を確認してください",
+                description=(
+                    f"**🛡️ 副団長**: {'はい' if data['job']['vice'] else 'いいえ'}\n"
+                    f"**📣 〇運広報**: {'はい' if data['job']['publicity'] else 'いいえ'}\n\n"
+                    "❗️ 修正したい項目の絵文字を押してください\n"
+                    "✅ 問題なければ確認完了です"
+                ),
+                color=discord.Color.orange(),
+            )
+            msg = await channel.send(embed=confirm_embed)
+            emoji_map = {
+                "🛡️": "vice",
+                "📣": "publicity",
+                "✅": "confirm",
+            }
+            for emoji in emoji_map:
+                await msg.add_reaction(emoji)
+
+            def confirm_reaction_check(reaction, user_):
+                return (
+                    user_ == user
+                    and reaction.message.id == msg.id
+                    and str(reaction.emoji) in emoji_map
+                )
+
+            reaction, _ = await bot.wait_for(
+                "reaction_add", check=confirm_reaction_check
+            )
+            selected = emoji_map[str(reaction.emoji)]
+
+            await msg.delete()
+
+            if selected == "confirm":
+                break
+
+            # 再入力処理
+            if selected == "vice":
+                embed = discord.Embed(
+                    title="✏️ 副団長かどうかを再選択してください：",
+                    description="✅：はい\n❎：いいえ\n\n該当するリアクションをクリックしてください",
+                    color=discord.Color.blue(),
+                )
+                msg = await channel.send(embed=embed)
+                await msg.add_reaction("✅")
+                await msg.add_reaction("❎")
+
+                def vice_check(reaction, user_):
+                    return (
+                        user_ == user
+                        and reaction.message.id == msg.id
+                        and str(reaction.emoji) in ["✅", "❎"]
+                    )
+
+                reaction, _ = await bot.wait_for("reaction_add", check=vice_check)
+                data["job"]["vice"] = str(reaction.emoji) == "✅"
+
+            elif selected == "publicity":
+                embed = discord.Embed(
+                    title="✏️ 〇運広報かどうかを再選択してください：",
+                    description="✅：はい\n❎：いいえ\n\n該当するリアクションをクリックしてください",
+                    color=discord.Color.blue(),
+                )
+                msg = await channel.send(embed=embed)
+                await msg.add_reaction("✅")
+                await msg.add_reaction("❎")
+
+                def publicity_check(reaction, user_):
+                    return (
+                        user_ == user
+                        and reaction.message.id == msg.id
+                        and str(reaction.emoji) in ["✅", "❎"]
+                    )
+
+                reaction, _ = await bot.wait_for("reaction_add", check=publicity_check)
+                data["job"]["publicity"] = str(reaction.emoji) == "✅"
+
     # 実行フェーズ
     await input_all_fields()
     await confirm_inputs_information()
@@ -496,6 +624,19 @@ async def run_setup_flow(user, channel):
             f"**〇技**: {'はい' if data['position']['technique'] else 'いいえ'}\n"
             f"**演実**: {'はい' if data['position']['concert'] else 'いいえ'}"
             f"**第三者**: {'はい' if data['position']['third_party'] else 'いいえ'}"
+        ),
+        color=discord.Color.green(),
+    )
+    await channel.send(embed=embed_done)
+
+    await prompt_reaction_job()
+    await confirm_inputs_job()
+
+    embed_done = discord.Embed(
+        title="✅ 役職情報の設定が完了しました！",
+        description=(
+            f"**副団長**: {'はい' if data['position']['executive'] else 'いいえ'}\n"
+            f"**広報**: {'はい' if data['position']['technique'] else 'いいえ'}\n"
         ),
         color=discord.Color.green(),
     )
@@ -649,6 +790,24 @@ async def run_setup_flow(user, channel):
                 await channel.send("⚖️ `第三者` ロールを付与しました！")
             else:
                 await channel.send("⚠️ `第三者` ロールが見つかりませんでした")
+
+        # 副団長ロールの付与
+        if data["job"]["vice"]:
+            concert_role = discord.utils.get(guild.roles, name="副団長")
+            if concert_role:
+                await member.add_roles(concert_role)
+                await channel.send("🛡️ `副団長` ロールを付与しました！")
+            else:
+                await channel.send("⚠️ `副団長` ロールが見つかりませんでした")
+
+        # 広報ロールの付与
+        if data["job"]["publicity"]:
+            concert_role = discord.utils.get(guild.roles, name="広報")
+            if concert_role:
+                await member.add_roles(concert_role)
+                await channel.send("📣 `広報` ロールを付与しました！")
+            else:
+                await channel.send("⚠️ `広報` ロールが見つかりませんでした")
 
     else:
         await channel.send("⚠️ サーバーメンバーが見つかりませんでした")
