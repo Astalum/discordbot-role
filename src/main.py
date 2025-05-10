@@ -659,13 +659,6 @@ async def run_setup_flow(user, channel):
         )
         return
 
-    role = discord.utils.get(guild.roles, name=config.CONFIRMATION_ROLE_NAME)
-    if role is None:
-        await channel.send(
-            "⚠️ ロールが見つかりませんでした。管理者にお問い合わせください。"
-        )
-        return
-
     member = guild.get_member(user.id)
     if member:
 
@@ -679,8 +672,21 @@ async def run_setup_flow(user, channel):
                 "⚠️ ニックネームを変更できませんでした。Botに「ニックネームの変更」権限があるか確認してください"
             )
 
-        await member.add_roles(role)
-        await channel.send(f"🎉 `{role.name}` ロールが付与されました！")
+        # ✅ 団員/新入生ロールの付与
+        if data.get("is_newcomer"):
+            freshman_role = discord.utils.get(guild.roles, name="新入生")
+            if freshman_role:
+                await member.add_roles(freshman_role)
+                await channel.send("🎓 `新入生` ロールを付与しました！")
+            else:
+                await channel.send("⚠️ `新入生` ロールが見つかりませんでした")
+        else:
+            group_member = discord.utils.get(guild.roles, name="団員")
+            if group_member:
+                await member.add_roles(group_member)
+                await channel.send("🎓 `団員` ロールを付与しました！")
+            else:
+                await channel.send("⚠️ `団員` ロールが見つかりませんでした")
 
         execution_term = read_term_of_execution_from_file()
         if execution_term is None:
@@ -708,18 +714,9 @@ async def run_setup_flow(user, channel):
             term_role = discord.utils.get(guild.roles, name=term_role_name)
             if term_role:
                 await member.add_roles(term_role)
-                await channel.send(f"📌 `{term_role.name}` ロールを付与しました")
+                await channel.send(f"📌 `{term_role.name}` ロールを付与しました！")
             else:
                 await channel.send(f"⚠️ `{term_role_name}` ロールが見つかりません")
-
-        # ✅ 新入生ロールの付与（data["is_newcomer"] が True の場合）
-        if data.get("is_newcomer"):
-            freshman_role = discord.utils.get(guild.roles, name="新入生")
-            if freshman_role:
-                await member.add_roles(freshman_role)
-                await channel.send("🎓 `新入生` ロールを付与しました！")
-            else:
-                await channel.send("⚠️ `新入生` ロールが見つかりませんでした")
 
         # ✅ ← ネストの外に移動：パートロールと性別ロールは常に実行
         part_role_map = {
@@ -735,13 +732,13 @@ async def run_setup_flow(user, channel):
 
         if part_role:
             await member.add_roles(part_role)
-            await channel.send(f"🎵 `{part_role_name}` ロールを付与しました")
+            await channel.send(f"🎵 `{part_role_name}` ロールを付与しました！")
         else:
             await channel.send(f"⚠️ `{part_role_name}` ロールが見つかりませんでした")
 
         if gender_role:
             await member.add_roles(gender_role)
-            await channel.send(f"🎶 `{gender_role_name}` ロールを付与しました")
+            await channel.send(f"🎶 `{gender_role_name}` ロールを付与しました！")
         else:
             await channel.send(f"⚠️ `{gender_role_name}` ロールが見つかりませんでした")
 
