@@ -598,6 +598,99 @@ async def run_setup_flow(user, channel):
                 reaction, _ = await bot.wait_for("reaction_add", check=publicity_check)
                 data["job"]["publicity"] = str(reaction.emoji) == "✅"
 
+    async def activity_investigation(user, channel, data):
+        stages = {
+            "first": "副指揮ステージ",
+            "second": "正指揮ステージ",
+            "german": "ドイツリートステージ",
+            "takata": "髙田曲ステージ",
+        }
+
+        for key, label in stages.items():
+            embed = discord.Embed(
+                title=f"あなたは{label}にオンステしますか？",
+                description="✅：はい\n❎：いいえ\n\n該当するリアクションをクリックしてください",
+                color=discord.Color.blue(),
+            )
+            msg = await channel.send(embed=embed)
+            await msg.add_reaction("✅")
+            await msg.add_reaction("❎")
+
+            def check(reaction, u):
+                return (
+                    u == user
+                    and reaction.message.id == msg.id
+                    and str(reaction.emoji) in ["✅", "❎"]
+                )
+
+            reaction, _ = await bot.wait_for("reaction_add", check=check)
+            data["stage"][key] = str(reaction.emoji) == "✅"
+
+    async def confirm_activity_investigation(user, channel, data):
+        emoji_map = {
+            "1️⃣": "first",
+            "2️⃣": "second",
+            "3️⃣": "german",
+            "4️⃣": "takata",
+            "✅": "confirm",
+        }
+
+        labels = {
+            "first": "副指揮",
+            "second": "正指揮",
+            "german": "ドイツリート",
+            "takata": "髙田曲",
+        }
+
+        while True:
+            confirm_embed = discord.Embed(
+                title="📝 入力内容を確認してください",
+                description="\n".join(
+                    f"**{labels[key]}**: {'乗る' if data['stage'][key] else '乗らない'}"
+                    for key in ["first", "second", "german", "takata"]
+                )
+                + "\n\n❗️ 修正したい項目の絵文字を押してください\n✅ 問題なければ確認完了です",
+                color=discord.Color.orange(),
+            )
+
+            msg = await channel.send(embed=confirm_embed)
+            for emoji in emoji_map:
+                await msg.add_reaction(emoji)
+
+            def check(reaction, u):
+                return (
+                    u == user
+                    and reaction.message.id == msg.id
+                    and str(reaction.emoji) in emoji_map
+                )
+
+            reaction, _ = await bot.wait_for("reaction_add", check=check)
+            selected = emoji_map[str(reaction.emoji)]
+            await msg.delete()
+
+            if selected == "confirm":
+                break
+
+            label = labels[selected]
+            embed = discord.Embed(
+                title=f"✏️ {label}に乗るかどうかを再選択してください：",
+                description="✅：はい\n❎：いいえ\n\n該当するリアクションをクリックしてください",
+                color=discord.Color.blue(),
+            )
+            msg = await channel.send(embed=embed)
+            await msg.add_reaction("✅")
+            await msg.add_reaction("❎")
+
+            def stage_check(reaction, u):
+                return (
+                    u == user
+                    and reaction.message.id == msg.id
+                    and str(reaction.emoji) in ["✅", "❎"]
+                )
+
+            reaction, _ = await bot.wait_for("reaction_add", check=stage_check)
+            data["stage"][selected] = str(reaction.emoji) == "✅"
+
     # 実行フェーズ
     await input_all_fields()
     await confirm_inputs_information()
@@ -804,6 +897,57 @@ async def run_setup_flow(user, channel):
             else:
                 await channel.send("⚠️ `広報` ロールが見つかりませんでした")
 
+        await activity_investigation()
+        await confirm_activity_investigation()
+
+        embed_done = discord.Embed(
+            title="✅ オンステ情報の入力が完了しました！",
+            description=(
+                f"**副指揮**: {'乗る' if data['stage']['first'] else '乗らない'}\n"
+                f"**正指揮**: {'乗る' if data['stage']['second'] else '乗らない'}\n"
+                f"**ドイツリート**: {'乗る' if data['stage']['german'] else '乗らない'}"
+                f"**髙田曲**: {'乗る' if data['stage']['takata'] else '乗らない'}"
+            ),
+            color=discord.Color.green(),
+        )
+
+        await channel.send(embed=embed_done)
+
+        # 副指揮ロールの付与
+        if data["stage"]["first"]:
+            first_role = discord.utils.get(guild.roles, name="副指揮")
+            if first_role:
+                await member.add_roles(first_role)
+                await channel.send("🛡️ `副指揮` ロールを付与しました！")
+            else:
+                await channel.send("⚠️ `副指揮` ロールが見つかりませんでした")
+
+        # 正指揮ロールの付与
+        if data["stage"]["second"]:
+            second_role = discord.utils.get(guild.roles, name="正指揮")
+            if second_role:
+                await member.add_roles(second_role)
+                await channel.send("🛡️ `正指揮` ロールを付与しました！")
+            else:
+                await channel.send("⚠️ `正指揮` ロールが見つかりませんでした")
+
+        # 3ステロールの付与
+        if data["stage"]["german"]:
+            german_role = discord.utils.get(guild.roles, name="ドイツリート")
+            if german_role:
+                await member.add_roles(german_role)
+                await channel.send("🛡️ `ドイツリート` ロールを付与しました！")
+            else:
+                await channel.send("⚠️ `ドイツリート` ロールが見つかりませんでした")
+
+        # 4ステロールの付与
+        if data["stage"]["takata"]:
+            takata_role = discord.utils.get(guild.roles, name="髙田曲")
+            if takata_role:
+                await member.add_roles(takata_role)
+                await channel.send("🛡️ `髙田曲` ロールを付与しました！")
+            else:
+                await channel.send("⚠️ `髙田曲` ロールが見つかりませんでした")
     else:
         await channel.send("⚠️ サーバーメンバーが見つかりませんでした")
 
