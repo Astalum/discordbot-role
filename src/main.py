@@ -16,6 +16,13 @@ intents.members = True
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 user_settings = {}
+PATH_TERM_OF_EXECUTION = "./src/term_of_execution.txt"
+# dockercontainer用
+PATH_GUILD_ID = "/shared_data/guild_id.txt"
+PATH_USER_SETTINGS = "/shared_data/user_settings.json"
+# local用
+# PATH_GUILD_ID="./src/guild_id.txt"
+# PATH_USER_SETTINGS = "./src/user_settings.json"
 
 
 @bot.event
@@ -956,12 +963,12 @@ async def run_setup_flow(user, channel):
     save_user_settings(user_settings)
 
 
-def save_user_settings(data, filename="./src/user_settings.json"):
+def save_user_settings(data, filename=PATH_USER_SETTINGS):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-def read_guild_id_from_file(filename="src/guild_id.txt"):
+def read_guild_id_from_file(filename=PATH_GUILD_ID):
     try:
         with open(filename, "r") as f:
             guild_id = f.read().strip()
@@ -974,7 +981,7 @@ def read_guild_id_from_file(filename="src/guild_id.txt"):
         return None
 
 
-def read_term_of_execution_from_file(filename="src/term_of_execution.txt"):
+def read_term_of_execution_from_file(filename=PATH_TERM_OF_EXECUTION):
     try:
         with open(filename, "r") as f:
             return int(f.read().strip())
@@ -983,7 +990,7 @@ def read_term_of_execution_from_file(filename="src/term_of_execution.txt"):
 
 
 def get_execution_term():
-    with open("term_of_execution.txt", "r", encoding="utf-8") as f:
+    with open(PATH_TERM_OF_EXECUTION, "r", encoding="utf-8") as f:
         return int(f.read().strip())
 
 
@@ -994,9 +1001,7 @@ def extract_term_from_roles(member):
     return None
 
 
-@bot.tree.command(
-    name="set_server-id", description="guild_id.txt にサーバーIDを記録します"
-)
+@bot.tree.command(name="set_server-id", description="サーバーIDを記録します")
 async def set_server_id(interaction: discord.Interaction):
     await interaction.response.send_message(
         "サーバーIDをこのチャンネルで送信してください。"
@@ -1015,7 +1020,7 @@ async def set_server_id(interaction: discord.Interaction):
         )
         return
 
-    file_path = os.path.join(os.path.dirname(__file__), "guild_id.txt")
+    file_path = os.path.join(os.path.dirname(__file__), PATH_GUILD_ID)
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(f"{msg.content}\n")
 
@@ -1050,13 +1055,70 @@ async def set_term_of_execution(interaction: discord.Interaction):
         )
         return
 
-    file_path = os.path.join(os.path.dirname(__file__), "term_of_execution.txt")
+    file_path = os.path.join(os.path.dirname(__file__), PATH_TERM_OF_EXECUTION)
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(f"{msg.content}\n")
 
     await interaction.followup.send(
         "✅ 執行代を `term_of_execution.txt` に書き込みました。"
     )
+
+
+@bot.tree.command(
+    name="set_my-status", description="ギルドオーナーの初期設定を行います"
+)
+async def set_my_status(interaction: discord.Interaction):
+    if interaction.user.id != interaction.guild.owner_id:
+        embed = discord.Embed(
+            title="🚫 権限がありません",
+            description="このコマンドはサーバーの作成者（オーナー）のみが実行できます。",
+            color=discord.Color.red(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    else:
+        # チャンネルでセットアップ案内を送信し、DMでセットアップ開始
+        try:
+            # member情報を取得
+            member = interaction.user
+            # DMで setup を実行
+            dm_channel = await member.create_dm()
+            await dm_channel.send(
+                "👋 はじめまして！初期設定を行います、必要事項を入力してください。"
+            )
+            await run_setup_flow(member, dm_channel)
+        except Exception as e:
+            print(f"⚠️ 初期設定送信中にエラー: {e}")
+
+
+# @bot.tree.command(
+#     name="help_initialization", description="サーバの初期設定のヘルプを表示します"
+# )
+# async def set_my_status(interaction: discord.Interaction):
+#     if interaction.user.id != interaction.guild.owner_id:
+#         embed = discord.Embed(
+#             title="🚫 権限がありません",
+#             description="このコマンドはサーバーの作成者（オーナー）のみが実行できます。",
+#             color=discord.Color.red(),
+#         )
+#         await interaction.response.send_message(embed=embed, ephemeral=True)
+#         return
+#     else:
+#         # チャンネルでセットアップ案内を送信し、DMでセットアップ開始
+#         await interaction.response.send_message("/set_server-id を実行してください")
+#         await interaction.response.send_message(
+#             "/set_term-of-execution を実行してください"
+#         )
+#         await interaction.response.send_message("/update_bot-id を実行してください")
+#         await interaction.response.send_message(
+#             "/update_reactions-id を実行してください"
+#         )
+#         await interaction.response.send_message(
+#             "これらのコマンドを実行することで、サーバーの初期設定が完了します。"
+#         )
+#         await interaction.response.send_message(
+#             "その後、/set_my-status を実行して、自分の初期設定を行ってください"
+#         )
 
 
 bot.run(config.DISCORD_TOKEN)
