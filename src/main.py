@@ -1091,34 +1091,34 @@ async def set_my_status(interaction: discord.Interaction):
             print(f"⚠️ 初期設定送信中にエラー: {e}")
 
 
-# @bot.tree.command(
-#     name="help_initialization", description="サーバの初期設定のヘルプを表示します"
-# )
-# async def set_my_status(interaction: discord.Interaction):
-#     if interaction.user.id != interaction.guild.owner_id:
-#         embed = discord.Embed(
-#             title="🚫 権限がありません",
-#             description="このコマンドはサーバーの作成者（オーナー）のみが実行できます。",
-#             color=discord.Color.red(),
-#         )
-#         await interaction.response.send_message(embed=embed, ephemeral=True)
-#         return
-#     else:
-#         # チャンネルでセットアップ案内を送信し、DMでセットアップ開始
-#         await interaction.response.send_message("/set_server-id を実行してください")
-#         await interaction.response.send_message(
-#             "/set_term-of-execution を実行してください"
-#         )
-#         await interaction.response.send_message("/update_bot-id を実行してください")
-#         await interaction.response.send_message(
-#             "/update_reactions-id を実行してください"
-#         )
-#         await interaction.response.send_message(
-#             "これらのコマンドを実行することで、サーバーの初期設定が完了します。"
-#         )
-#         await interaction.response.send_message(
-#             "その後、/set_my-status を実行して、自分の初期設定を行ってください"
-#         )
+@bot.tree.command(
+    name="help_initialization", description="サーバの初期設定のヘルプを表示します"
+)
+async def set_my_status(interaction: discord.Interaction):
+    if interaction.user.id != interaction.guild.owner_id:
+        embed = discord.Embed(
+            title="🚫 権限がありません",
+            description="このコマンドはサーバーの作成者（オーナー）のみが実行できます。",
+            color=discord.Color.red(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    else:
+        # チャンネルでセットアップ案内を送信し、DMでセットアップ開始
+        await interaction.response.send_message("/set_server-id を実行してください")
+        await interaction.response.send_message(
+            "/set_term-of-execution を実行してください"
+        )
+        await interaction.response.send_message("/update_bot-id を実行してください")
+        await interaction.response.send_message(
+            "/update_reactions-id を実行してください"
+        )
+        await interaction.response.send_message(
+            "これらのコマンドを実行することで、サーバーの初期設定が完了します。"
+        )
+        await interaction.response.send_message(
+            "その後、/set_my-status を実行して、自分の初期設定を行ってください"
+        )
 
 
 bot.run(config.DISCORD_TOKEN)
