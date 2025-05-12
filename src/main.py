@@ -16,14 +16,15 @@ intents.members = True
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 user_settings = {}
-PATH_TERM_OF_EXECUTION = "./src/term_of_execution.txt"
 PATH_SERVER_VERSION = "./src/server_version.txt"
 # dockercontainer用
-# PATH_GUILD_JSON = "/shared_data/guild_id.json"
-# PATH_USER_SETTINGS = "/shared_data/user_settings.json"
+PATH_TERM_OF_EXECUTION = "/shared_data/term_of_execution.txt"
+PATH_GUILD_JSON = "/shared_data/guild_id.json"
+PATH_USER_SETTINGS = "/shared_data/user_settings.json"
 # local用
-PATH_GUILD_JSON = "./src/guild_id.json"
-PATH_USER_SETTINGS = "./src/user_settings.json"
+# PATH_GUILD_JSON = "guild_id.json"
+# PATH_USER_SETTINGS = "user_settings.json"
+# PATH_TERM_OF_EXECUTION = "./src/term_of_execution.txt"
 
 
 @bot.event
@@ -305,6 +306,7 @@ async def run_setup_flow(user, channel):
 
     async def prompt_reaction_position():
         execution_term = read_term_of_execution_from_file()
+        print(execution_term)
         if (int(data["term"]) not in [execution_term, execution_term + 1]) or data[
             "is_newcomer"
         ]:
@@ -1024,27 +1026,73 @@ def extract_term_from_roles(member):
 @bot.tree.command(name="set_server-id", description="サーバーIDを記録します")
 async def set_server_id(interaction: discord.Interaction):
     await interaction.response.send_message(
-        "サーバーIDをこのチャンネルで送信してください。"
+        "🗝️ まず、このサーバーのバージョン番号（整数）を送信してください。"
     )
 
     def check(m):
         return m.author == interaction.user and m.channel == interaction.channel
 
     try:
-        msg = await bot.wait_for(
-            "message", check=check, timeout=60.0
-        )  # 60秒のタイムアウト
+        # バージョン番号を受信
+        version_msg = await bot.wait_for("message", check=check, timeout=60.0)
+        version_key = int(version_msg.content.strip())
     except asyncio.TimeoutError:
         await interaction.followup.send(
-            "⚠️ 時間切れです。もう一度 `/set_server-id` を実行してください。"
+            "⚠️ 時間切れです。もう一度 `/set_server-id` を実行してください。",
+            ephemeral=True,
+        )
+        return
+    except ValueError:
+        await interaction.followup.send(
+            "❌ 整数のバージョン番号を入力してください。", ephemeral=True
         )
         return
 
-    file_path = os.path.join(os.path.dirname(__file__), PATH_GUILD_JSON)
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(f"{msg.content}\n")
+    await interaction.followup.send("📥 次に、サーバーID（数値）を送信してください。")
 
-    await interaction.followup.send("✅ サーバーIDを書き込みました。")
+    try:
+        # サーバーIDを受信
+        id_msg = await bot.wait_for("message", check=check, timeout=60.0)
+        guild_id = int(id_msg.content.strip())
+    except asyncio.TimeoutError:
+        await interaction.followup.send(
+            "⚠️ 時間切れです。もう一度 `/set_server-id` を実行してください。",
+            ephemeral=True,
+        )
+        return
+    except ValueError:
+        await interaction.followup.send(
+            "❌ 数値のサーバーIDを入力してください。", ephemeral=True
+        )
+        return
+
+    # guilds.json 読み込み
+    file_path = os.path.join(os.path.dirname(__file__), PATH_GUILD_JSON)
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                guilds = json.load(f)
+        except json.JSONDecodeError:
+            await interaction.followup.send(
+                "❌ JSONファイルの読み込みに失敗しました。", ephemeral=True
+            )
+            return
+    else:
+        guilds = {}
+
+    # 上書きまたは追加
+    guilds[str(version_key)] = guild_id
+
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(guilds, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        await interaction.followup.send(f"❌ 書き込みエラー: {e}", ephemeral=True)
+        return
+
+    await interaction.followup.send(
+        f"✅ サーバーID `{guild_id}` をバージョン `{version_key}` に保存しました。"
+    )
 
 
 @bot.tree.command(
@@ -1083,6 +1131,45 @@ async def set_term_of_execution(interaction: discord.Interaction):
 
 
 @bot.tree.command(
+    name="set_admin-server-version",
+    description="サーバのバージョンを記録します",
+)
+async def set_server_version(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "使用するサーバの年度を数字のみでこのチャンネルで送ってください。"
+    )
+
+    def check(m):
+        return m.author == interaction.user and m.channel == interaction.channel
+
+    try:
+        msg = await bot.wait_for("message", check=check, timeout=60.0)
+    except asyncio.TimeoutError:
+        await interaction.followup.send(
+            "⚠️ 時間切れです。もう一度 `/set_server_version` を実行してください。"
+        )
+        return
+
+    if not msg.content.isdigit():
+        await interaction.followup.send(
+            "⚠️ 入力は数字のみでお願いします。もう一度 `/set_server_version` を実行してください。"
+        )
+        return
+
+    # ファイルパスを安全な場所に設定
+    file_path = os.path.join(os.path.dirname(__file__), PATH_SERVER_VERSION)
+
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(f"{msg.content}\n")
+        await interaction.followup.send("✅ サーバのバージョンを書き込みました。")
+    except PermissionError:
+        await interaction.followup.send(
+            "⚠️ ファイルへの書き込みに失敗しました。パーミッションを確認してください。"
+        )
+
+
+@bot.tree.command(
     name="set_my-status", description="ギルドオーナーの初期設定を行います"
 )
 async def set_my_status(interaction: discord.Interaction):
@@ -1096,6 +1183,7 @@ async def set_my_status(interaction: discord.Interaction):
         return
     else:
         # チャンネルでセットアップ案内を送信し、DMでセットアップ開始
+        await interaction.response.send_message("DMを確認してください")
         try:
             # member情報を取得
             member = interaction.user
