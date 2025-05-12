@@ -17,12 +17,13 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 
 user_settings = {}
 PATH_TERM_OF_EXECUTION = "./src/term_of_execution.txt"
+PATH_SERVER_VERSION = "./src/server_version.txt"
 # dockercontainer用
-PATH_GUILD_ID = "/shared_data/guild_id.txt"
-PATH_USER_SETTINGS = "/shared_data/user_settings.json"
+# PATH_GUILD_JSON = "/shared_data/guild_id.json"
+# PATH_USER_SETTINGS = "/shared_data/user_settings.json"
 # local用
-# PATH_GUILD_ID="./src/guild_id.txt"
-# PATH_USER_SETTINGS = "./src/user_settings.json"
+PATH_GUILD_JSON = "./src/guild_id.json"
+PATH_USER_SETTINGS = "./src/user_settings.json"
 
 
 @bot.event
@@ -968,16 +969,35 @@ def save_user_settings(data, filename=PATH_USER_SETTINGS):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-def read_guild_id_from_file(filename=PATH_GUILD_ID):
+def read_guild_id_from_file(
+    json_path=PATH_GUILD_JSON, version_path=PATH_SERVER_VERSION
+):
     try:
-        with open(filename, "r") as f:
-            guild_id = f.read().strip()
-            return int(guild_id)  # ファイルから読み込んだIDを整数として返す
+        with open(version_path, "r") as vf:
+            version_str = vf.read().strip()
+            version = int(version_str)
     except FileNotFoundError:
-        print(f"❌ {filename} が見つかりませんでした")
+        print(f"❌ {version_path} が見つかりませんでした")
         return None
     except ValueError:
-        print("❌ guild_id.txt に無効なIDが含まれています")
+        print("❌ server_version.txt に無効な整数が含まれています")
+        return None
+
+    try:
+        with open(json_path, "r") as jf:
+            guilds = json.load(jf)
+            guild_id = guilds.get(str(version))  # キーは文字列である必要がある
+            if guild_id is None:
+                print(
+                    f"❌ バージョン {version} に対応する guild_id が見つかりませんでした"
+                )
+                return None
+            return int(guild_id)
+    except FileNotFoundError:
+        print(f"❌ {json_path} が見つかりませんでした")
+        return None
+    except json.JSONDecodeError:
+        print("❌ guilds.json の読み込み中にエラーが発生しました")
         return None
 
 
@@ -1020,7 +1040,7 @@ async def set_server_id(interaction: discord.Interaction):
         )
         return
 
-    file_path = os.path.join(os.path.dirname(__file__), PATH_GUILD_ID)
+    file_path = os.path.join(os.path.dirname(__file__), PATH_GUILD_JSON)
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(f"{msg.content}\n")
 
