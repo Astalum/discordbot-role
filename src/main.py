@@ -1044,12 +1044,12 @@ async def set_server_id(interaction: discord.Interaction):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(f"{msg.content}\n")
 
-    await interaction.followup.send("✅ サーバーIDを `guild_id.txt` に書き込みました。")
+    await interaction.followup.send("✅ サーバーIDを書き込みました。")
 
 
 @bot.tree.command(
     name="set_term-of-execution",
-    description="term_of_execution.txt に執行代を記録します",
+    description="執行代を記録します",
 )
 async def set_term_of_execution(interaction: discord.Interaction):
     await interaction.response.send_message(
@@ -1079,9 +1079,7 @@ async def set_term_of_execution(interaction: discord.Interaction):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(f"{msg.content}\n")
 
-    await interaction.followup.send(
-        "✅ 執行代を `term_of_execution.txt` に書き込みました。"
-    )
+    await interaction.followup.send("✅ 執行代を書き込みました。")
 
 
 @bot.tree.command(
