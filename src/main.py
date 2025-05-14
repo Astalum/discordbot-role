@@ -38,7 +38,7 @@ async def on_member_join(member):
     await asyncio.sleep(1)  # 少し待機（Discord APIの都合で必要な場合がある）
 
     # サーバーの「はじめに」チャンネルを取得
-    intro_channel = discord.utils.get(member.guild.text_channels, name="はじめに")
+    intro_channel = discord.utils.get(member.guild.text_channels, name="ようこそ")
 
     if intro_channel is None:
         print("❌『はじめに』チャンネルが見つかりませんでした")
