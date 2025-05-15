@@ -16,7 +16,7 @@ intents.members = True
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 user_settings = {}
-PATH_SERVER_VERSION = "./src/server_version.txt"
+PATH_SERVER_VERSION = "/app/src/server_version.txt"
 # dockercontainer用
 PATH_TERM_OF_EXECUTION = "/shared_data/term_of_execution.txt"
 PATH_GUILD_JSON = "/shared_data/guild_id.json"
